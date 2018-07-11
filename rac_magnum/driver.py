@@ -12,12 +12,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from magnum.drivers.swarm_fedora_atomic_v2 import driver
+from magnum.drivers.swarm_fedora_atomic_v2 import driver as swarm_driver
+from magnum.drivers.k8s_fedora_atomic_v1 import driver as k8s_driver
 from magnum.drivers.swarm_fedora_atomic_v2 import monitor
-from template_def import RACAtomicSwarmTemplateDefinition
+from template_def import RACAtomicSwarmTemplateDefinition, RACAtomicK8sTemplateDefinition
 
 
-class RACAtomicSwarmDriver(driver.Driver):
+class RACAtomicSwarmDriver(swarm_driver.Driver):
 
     @property
     def provides(self):
@@ -32,3 +33,25 @@ class RACAtomicSwarmDriver(driver.Driver):
 
     def get_monitor(self, context, cluster):
         return monitor.SwarmMonitor(context, cluster)
+
+class RACAtomicK8sDriver(k8s_driver.Driver):
+
+    @property
+    def provides(self):
+        return [
+            {'server_type': 'vm',
+             'os': 'rac-fedora-atomic',
+             'coe': 'kubernetes'},
+        ]
+
+    def get_template_definition(self):
+        return RACAtomicK8sTemplateDefinition()
+
+    def get_monitor(self, context, cluster):
+        return k8s_monitor.K8sMonitor(context, cluster)
+
+    def get_scale_manager(self, context, osclient, cluster):
+        # FIXME: Until the kubernetes client is fixed, remove
+        # the scale_manager.
+        # https://bugs.launchpad.net/magnum/+bug/1746510
+        return None
