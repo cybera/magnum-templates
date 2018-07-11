@@ -195,6 +195,7 @@ resources:
       group: ungrouped
       config:
         str_replace:
+          # JT
           template: {get_file: fragments/write-heat-params-master.yaml}
           params:
             "$IS_PRIMARY_MASTER": {get_param: is_primary_master}
@@ -241,6 +242,7 @@ resources:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
+        # JT
       config: {get_file: fragments/remove-docker-key.sh}
 
   configure_docker_storage:
@@ -250,31 +252,37 @@ resources:
       config:
         str_replace:
           params:
+            # JT
             $configure_docker_storage_driver: {get_file: ../common/fragments/configure_docker_storage_driver_atomic.sh}
+          # JT
           template: {get_file: ../common/fragments/configure-docker-storage.sh}
 
   make_cert:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
+      # JT
       config: {get_file: fragments/make-cert.py}
 
   add_docker_daemon_options:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
+      # JT
       config: {get_file: fragments/add-docker-daemon-options.sh}
 
   write_docker_socket:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
+      # JT
       config: {get_file: fragments/write-docker-socket.yaml}
 
   write_swarm_master_service:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
+      # JT
       config: {get_file: fragments/write-swarm-master-service.sh}
 
   enable_services:
@@ -283,6 +291,7 @@ resources:
       group: ungrouped
       config:
         str_replace:
+          # JT
           template: {get_file: fragments/enable-services.sh}
           params:
             "$NODE_SERVICES": "docker.socket docker"
@@ -291,18 +300,21 @@ resources:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
+      # JT
       config: {get_file: fragments/configure-selinux.sh}
 
   add_proxy:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
+      # JT
       config: {get_file: fragments/add-proxy.sh}
 
   volume_service:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
+      # JT
       config: {get_file: fragments/volume-service.sh}
 
   swarm_master_init:

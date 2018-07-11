@@ -211,6 +211,7 @@ resources:
   # configuration necessary to make this go.
 
   network:
+    # JT
     type: ../common/network.yaml
     properties:
       existing_network: {get_param: fixed_network}
@@ -220,6 +221,7 @@ resources:
       external_network: {get_param: external_network}
 
   api_lb:
+    # JT
     type: ../common/lb.yaml
     properties:
       fixed_subnet: {get_attr: [network, fixed_subnet]}
@@ -292,10 +294,6 @@ resources:
 
         # JT
         - protocol: icmp
-          ethertype: IPv6
-        - protocol: tcp
-          ethertype: IPv6
-        - protocol: udp
           ethertype: IPv6
 
   ######################################################################

@@ -165,8 +165,4 @@ class SwarmModeTemplateDefinition(template_def.BaseTemplateDefinition):
         # JT
         template_def.add_fip_env_file(env_files, cluster_template)
 
-        # JT
-        #env_files.append('../common/environments/enable_floating_ip.yaml')
-        #env_files.append('../common/environments/disable_floating_ip.yaml')
-
         return env_files
