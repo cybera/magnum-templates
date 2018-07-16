@@ -246,17 +246,21 @@ resources:
         - protocol: tcp
           port_range_min: 2375
           port_range_max: 2375
-        - protocol: tcp
-          remote_ip_prefix: "10.1.0.0/16"
-          port_range_min: 1
-          port_range_max: 65535
-        - protocol: tcp
-          remote_ip_prefix: "10.2.0.0/16"
-          port_range_min: 1
-          port_range_max: 65535
         - protocol: udp
           port_range_min: 53
           port_range_max: 53
+
+        # JT
+        - protocol: tcp
+          port_range_min: 1
+          port_range_max: 65535
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_swarm_node }
+        - protocol: udp
+          port_range_min: 1
+          port_range_max: 65535
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_swarm_node }
 
         # JT
         - protocol: icmp
@@ -268,16 +272,6 @@ resources:
         - protocol: tcp
           port_range_min: 2375
           port_range_max: 2375
-          ethertype: IPv6
-        - protocol: tcp
-          remote_ip_prefix: "2605:fd00:4:1000::/64"
-          port_range_min: 1
-          port_range_max: 65535
-          ethertype: IPv6
-        - protocol: tcp
-          remote_ip_prefix: "2605:fd00:4:1001::/64"
-          port_range_min: 1
-          port_range_max: 65535
           ethertype: IPv6
         - protocol: udp
           port_range_min: 53
