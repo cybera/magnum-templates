@@ -41,6 +41,29 @@ class RACAtomicSwarmTemplateDefinition(sftd.SwarmModeTemplateDefinition):
                                       **kwargs)
 
 
+class RACUbuntuSwarmTemplateDefinition(sftd.SwarmModeTemplateDefinition):
+    """Docker swarm template for Ubuntu on RAC."""
+
+    @property
+    def driver_module_path(self):
+        return __name__[:__name__.rindex('.')]
+
+    @property
+    def template_path(self):
+        return os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'templates/swarm-ubuntu/swarmcluster.yaml')
+
+    def get_params(self, context, cluster_template, cluster, **kwargs):
+        ep = kwargs.pop('extra_params', {})
+
+        ep['number_of_secondary_masters'] = cluster.master_count - 1
+
+        return super(RACUbuntuSwarmTemplateDefinition,
+                     self).get_params(context, cluster_template, cluster,
+                                      extra_params=ep,
+                                      **kwargs)
+
+
 
 CONF = magnum.conf.CONF
 

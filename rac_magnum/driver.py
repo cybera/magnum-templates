@@ -15,7 +15,7 @@
 from magnum.drivers.swarm_fedora_atomic_v2 import driver as swarm_driver
 from magnum.drivers.k8s_fedora_atomic_v1 import driver as k8s_driver
 from magnum.drivers.swarm_fedora_atomic_v2 import monitor
-from template_def import RACAtomicSwarmTemplateDefinition, RACAtomicK8sTemplateDefinition
+from template_def import RACAtomicSwarmTemplateDefinition, RACAtomicK8sTemplateDefinition, RACUbuntuSwarmTemplateDefinition
 
 
 class RACAtomicSwarmDriver(swarm_driver.Driver):
@@ -30,6 +30,22 @@ class RACAtomicSwarmDriver(swarm_driver.Driver):
 
     def get_template_definition(self):
         return RACAtomicSwarmTemplateDefinition()
+
+    def get_monitor(self, context, cluster):
+        return monitor.SwarmMonitor(context, cluster)
+
+class RACUbuntuSwarmDriver(swarm_driver.Driver):
+
+    @property
+    def provides(self):
+        return [
+            {'server_type': 'vm',
+             'os': 'ubuntu-1804',
+             'coe': 'swarm'},
+        ]
+
+    def get_template_definition(self):
+        return RACUbuntuSwarmTemplateDefinition()
 
     def get_monitor(self, context, cluster):
         return monitor.SwarmMonitor(context, cluster)
