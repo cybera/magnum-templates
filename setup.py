@@ -24,6 +24,7 @@ setuptools.setup(
             'rac_swarm = rac_magnum.driver:RACAtomicSwarmDriver',
             'rac_k8s = rac_magnum.driver:RACAtomicK8sDriver',
             'rac_swarm_ubuntu = rac_magnum.driver:RACUbuntuSwarmDriver',
+            'rac_k8s_ubuntu = rac_magnum.driver:RACUbuntuK8sDriver',
         ]
     }
 )

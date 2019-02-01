@@ -15,7 +15,7 @@
 from magnum.drivers.swarm_fedora_atomic_v2 import driver as swarm_driver
 from magnum.drivers.k8s_fedora_atomic_v1 import driver as k8s_driver
 from magnum.drivers.swarm_fedora_atomic_v2 import monitor
-from template_def import RACAtomicSwarmTemplateDefinition, RACAtomicK8sTemplateDefinition, RACUbuntuSwarmTemplateDefinition
+from template_def import RACAtomicSwarmTemplateDefinition, RACAtomicK8sTemplateDefinition, RACUbuntuSwarmTemplateDefinition, RACUbuntuK8sTemplateDefinition
 
 
 class RACAtomicSwarmDriver(swarm_driver.Driver):
@@ -62,6 +62,28 @@ class RACAtomicK8sDriver(k8s_driver.Driver):
 
     def get_template_definition(self):
         return RACAtomicK8sTemplateDefinition()
+
+    def get_monitor(self, context, cluster):
+        return k8s_monitor.K8sMonitor(context, cluster)
+
+    def get_scale_manager(self, context, osclient, cluster):
+        # FIXME: Until the kubernetes client is fixed, remove
+        # the scale_manager.
+        # https://bugs.launchpad.net/magnum/+bug/1746510
+        return None
+
+class RACUbuntuK8sDriver(k8s_driver.Driver):
+
+    @property
+    def provides(self):
+        return [
+            {'server_type': 'vm',
+             'os': 'ubuntu-1804',
+             'coe': 'kubernetes'},
+        ]
+
+    def get_template_definition(self):
+        return RACUbuntuK8sTemplateDefinition()
 
     def get_monitor(self, context, cluster):
         return k8s_monitor.K8sMonitor(context, cluster)
