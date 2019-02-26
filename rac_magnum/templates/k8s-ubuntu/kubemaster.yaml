@@ -393,7 +393,12 @@ resources:
           template: {get_file: fragments/write-heat-params-master.yaml}
           params:
             "$PROMETHEUS_MONITORING": {get_param: prometheus_monitoring}
-            "$KUBE_API_PUBLIC_ADDRESS": {get_attr: [api_address_switch, public_ip]}
+            # JT
+            # Set the API IP to the private IP.
+            # This gets around some weird floating IP connectivity issue within the
+            # controller
+            "$KUBE_API_PUBLIC_ADDRESS": {get_attr: [api_address_switch, private_ip]}
+            #"$KUBE_API_PUBLIC_ADDRESS": {get_attr: [api_address_switch, public_ip]}
             "$KUBE_API_PRIVATE_ADDRESS": {get_attr: [api_address_switch, private_ip]}
             "$KUBE_API_PORT": {get_param: kubernetes_port}
             "$KUBE_NODE_PUBLIC_IP": {get_attr: [kube_master_floating, floating_ip_address]}
@@ -469,11 +474,31 @@ resources:
   #         # JT
   #         template: {get_file: ../common/fragments/atomic-install-openstack-ca.sh}
 
-  make_cert:
-    type: OS::Heat::SoftwareConfig
+  install_heat_tools:
+    type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
-      config: {get_file: fragments/make-cert.py}
+      config: {get_file: fragments/install-heat-tools.sh}
+
+  configure_config_agent:
+    type: "OS::Heat::SoftwareConfig"
+    properties:
+      group: ungrouped
+      config:
+        str_replace:
+          params:
+            $heat_config_script: {get_file: fragments/55-heat-config}
+            $hook_script: {get_file: fragments/hook-script.py}
+            $heat_config_notify: {get_file: fragments/heat-config-notify}
+            $occ_conf: {get_file: fragments/os-collect-config.conf}
+            $orc_oac: {get_file: fragments/20-os-apply-config}
+          template: {get_file: fragments/configure_config_agent.sh}
+
+  start_config_agent:
+    type: "OS::Heat::SoftwareConfig"
+    properties:
+      group: ungrouped
+      config: {get_file: fragments/start_config_agent.sh}
 
   install_docker:
     type: "OS::Heat::SoftwareConfig"
@@ -494,12 +519,18 @@ resources:
       group: ungrouped
       config: {get_file: fragments/configure-docker-storage.sh}
 
-  add_docker_daemon_options:
-    type: "OS::Heat::SoftwareConfig"
+  make_cert:
+    type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
-      config: {get_file: fragments/add-docker-daemon-options.sh}
+      config: {get_file: fragments/make-cert.sh}
+
+  #add_docker_daemon_options:
+  #  type: "OS::Heat::SoftwareConfig"
+  #  properties:
+  #    group: ungrouped
+  #    # JT
+  #    config: {get_file: fragments/add-docker-daemon-options.sh}
 
   # configure_etcd:
   #   type: OS::Heat::SoftwareConfig
@@ -583,18 +614,20 @@ resources:
     properties:
       parts:
         - config: {get_resource: write_heat_params}
+        - config: {get_resource: install_heat_tools}
         - config: {get_resource: configure_docker_storage}
         - config: {get_resource: install_docker}
         - config: {get_resource: remove_docker_key}
-        - config: {get_resource: make_cert}
         - config: {get_resource: write_kube_os_config}
         - config: {get_resource: configure_kubernetes}
+        - config: {get_resource: make_cert}
         - config: {get_resource: add_proxy}
-        - config: {get_resource: start_container_agent}
         - config: {get_resource: enable_services}
         - config: {get_resource: network_config_service}
         - config: {get_resource: kube_apiserver_to_kubelet_role}
         - config: {get_resource: master_wc_notify}
+        - config: {get_resource: configure_config_agent}
+        - config: {get_resource: start_config_agent}
 
   enable_prometheus_monitoring:
     type: OS::Heat::SoftwareConfig
@@ -684,6 +717,23 @@ resources:
       server: {get_resource: kube-master}
       actions: ['CREATE']
 
+  # JT
+  kubernetes_join_command:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config: {get_file: fragments/kubernetes-join-command.sh}
+
+  kubernetes_join_command_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      signal_transport: HEAT_SIGNAL
+      config: {get_resource: kubernetes_join_command}
+      server: {get_resource: kube-master}
+      actions: ['CREATE']
+
+
+
   ######################################################################
   #
   # a single kubernetes master.
@@ -700,7 +750,6 @@ resources:
       flavor: {get_param: master_flavor}
       key_name: {get_param: ssh_key_name}
       user_data_format: SOFTWARE_CONFIG
-      software_config_transport: POLL_SERVER_HEAT
       user_data: {get_resource: kube_master_init}
       networks:
         - port: {get_resource: kube_master_eth0}
@@ -795,3 +844,8 @@ outputs:
     value: {get_attr: [kube_master_floating, floating_ip_address]}
     description: >
       This is the "public" IP address of the Kubernetes master node.
+
+  join_command:
+    value: {get_attr: [kubernetes_join_command_deployment, deploy_stdout]}
+    description: >
+      The join command

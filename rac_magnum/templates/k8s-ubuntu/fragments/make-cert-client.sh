@@ -134,12 +134,9 @@ generate_certificates proxy ${cert_dir}/proxy.conf
 
 # Common certs and key are created for both etcd and kubernetes services.
 # Both etcd and kube user should have permission to access the certs and key.
-groupadd kube_etcd
-usermod -a -G kube_etcd etcd
-usermod -a -G kube_etcd kube
+#groupadd kube_etcd
+#usermod -a -G kube_etcd kube
 chmod 550 "${cert_dir}"
-chown -R kube:kube_etcd "${cert_dir}"
+#chown -R kube:kube_etcd "${cert_dir}"
 chmod 440 ${cert_dir}/kubelet.key
 chmod 440 ${cert_dir}/proxy.key
-mkdir -p /etc/flanneld/certs
-cp ${cert_dir}/* /etc/flanneld/certs
