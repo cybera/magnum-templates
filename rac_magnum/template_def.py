@@ -14,7 +14,7 @@
 import os
 
 import magnum.conf
-from rac_magnum.drivers.heat import k8s_fedora_template_def as kftd
+from rac_magnum.drivers.heat import k8s_mode_template_def as kftd
 from rac_magnum.drivers.heat import swarm_mode_template_def as sftd
 
 
@@ -67,7 +67,7 @@ class RACUbuntuSwarmTemplateDefinition(sftd.SwarmModeTemplateDefinition):
 
 CONF = magnum.conf.CONF
 
-class RACAtomicK8sTemplateDefinition(kftd.K8sFedoraTemplateDefinition):
+class RACAtomicK8sTemplateDefinition(kftd.K8sModeTemplateDefinition):
     """Kubernetes template for a Fedora Atomic VM on RAC."""
 
     @property
@@ -78,3 +78,15 @@ class RACAtomicK8sTemplateDefinition(kftd.K8sFedoraTemplateDefinition):
     def template_path(self):
         return os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'templates/k8s/kubecluster.yaml')
+
+class RACUbuntuK8sTemplateDefinition(kftd.K8sModeTemplateDefinition):
+    """Kubernetes template for Ubuntu VM on RAC."""
+
+    @property
+    def driver_module_path(self):
+        return __name__[:__name__.rindex('.')]
+
+    @property
+    def template_path(self):
+        return os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'templates/k8s-ubuntu/kubecluster.yaml')

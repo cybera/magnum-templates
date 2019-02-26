@@ -59,11 +59,11 @@ class NodeAddressOutputMapping(ServerAddressOutputMapping):
               self).set_output(stack, cluster_template, cluster)
 
 
-class K8sFedoraTemplateDefinition(k8s_template_def.K8sTemplateDefinition):
+class K8sModeTemplateDefinition(k8s_template_def.K8sTemplateDefinition):
     """Kubernetes template for a Fedora."""
 
     def __init__(self):
-        super(K8sFedoraTemplateDefinition, self).__init__()
+        super(K8sModeTemplateDefinition, self).__init__()
         self.add_parameter('docker_volume_size',
                            cluster_attr='docker_volume_size')
         self.add_parameter('docker_storage_driver',
@@ -116,7 +116,7 @@ class K8sFedoraTemplateDefinition(k8s_template_def.K8sTemplateDefinition):
                 ca_cert.get_private_key(),
                 ca_cert.get_private_key_passphrase()).replace("\n", "\\n")
 
-        return super(K8sFedoraTemplateDefinition,
+        return super(K8sModeTemplateDefinition,
                      self).get_params(context, cluster_template, cluster,
                                       extra_params=extra_params,
                                       **kwargs)
