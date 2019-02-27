@@ -78,10 +78,11 @@ sans="${sans},IP:${KUBE_SERVICE_IP}"
 
 sans="${sans},DNS:kubernetes,DNS:kubernetes.default,DNS:kubernetes.default.svc,DNS:kubernetes.default.svc.cluster.local"
 
-cert_dir=/etc/kubernetes/certs
+cert_dir=/etc/kubernetes/pki
 mkdir -p "$cert_dir"
 
 CA_CERT=$cert_dir/ca.crt
+CA_KEY_FILE=$cert_dir/ca.key
 SERVER_CERT=$cert_dir/server.crt
 SERVER_CSR=$cert_dir/server.csr
 SERVER_KEY=$cert_dir/server.key
@@ -155,3 +156,6 @@ curl $VERIFY_CA -X POST \
 chmod 550 "${cert_dir}"
 #chown -R kube:kube_etcd "${cert_dir}"
 chmod 440 $SERVER_KEY
+
+echo -e "$CA_KEY" > $CA_KEY_FILE
+chmod 440 $CA_KEY_FILE
