@@ -47,26 +47,15 @@ if [[ -n "${MASTER_HOSTNAME}" ]]; then
     sans="${sans},${MASTER_HOSTNAME}"
 fi
 
-if [[ -n "${ETCD_LB_VIP}" ]]; then
-    sans="${sans},${ETCD_LB_VIP}"
-fi
-
 sans="${sans},127.0.0.1"
-
-KUBE_SERVICE_IP=$(echo $PORTAL_NETWORK_CIDR | awk 'BEGIN{FS="[./]"; OFS="."}{print $1,$2,$3,$4 + 1}')
-
-sans="${sans},${KUBE_SERVICE_IP}"
 
 sans="${sans},kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster.local"
 
 echo $sans
 
 result=$(kubeadm init \
- --pod-network-cidr ${PODS_NETWORK_CIDR} \
- --service-cidr ${PORTAL_NETWORK_CIDR} \
- --service-dns-domain "${DNS_CLUSTER_DOMAIN}" \
+ --pod-network-cidr 10.244.0.0/16 \
  --apiserver-advertise-address ${KUBE_API_PRIVATE_ADDRESS} \
- --cert-dir /etc/kubernetes/pki \
  --apiserver-cert-extra-sans "$sans")
 
 echo $result
@@ -77,3 +66,9 @@ sed -i 's/insecure-port=0/insecure-port=8080/' /etc/kubernetes/manifests/kube-ap
 
 api_id=$(docker ps -qf name=k8s_kube-apiserver*)
 docker stop $api_id && docker rm $api_id
+
+echo "Waiting for Kubernetes API..."
+until curl --silent "http://127.0.0.1:8080/version"
+do
+  sleep 5
+done

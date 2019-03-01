@@ -20,10 +20,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-if [ "$TLS_DISABLED" == "True" ]; then
-    exit 0
-fi
-
 if [ "$VERIFY_CA" == "True" ]; then
     VERIFY_CA=""
 else
@@ -66,15 +62,7 @@ if [[ -n "${MASTER_HOSTNAME}" ]]; then
     sans="${sans},DNS:${MASTER_HOSTNAME}"
 fi
 
-if [[ -n "${ETCD_LB_VIP}" ]]; then
-    sans="${sans},IP:${ETCD_LB_VIP}"
-fi
-
 sans="${sans},IP:127.0.0.1"
-
-KUBE_SERVICE_IP=$(echo $PORTAL_NETWORK_CIDR | awk 'BEGIN{FS="[./]"; OFS="."}{print $1,$2,$3,$4 + 1}')
-
-sans="${sans},IP:${KUBE_SERVICE_IP}"
 
 sans="${sans},DNS:kubernetes,DNS:kubernetes.default,DNS:kubernetes.default.svc,DNS:kubernetes.default.svc.cluster.local"
 

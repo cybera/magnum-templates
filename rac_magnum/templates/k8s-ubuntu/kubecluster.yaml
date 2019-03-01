@@ -73,68 +73,10 @@ parameters:
     description: network range for fixed ip network
     default: 10.0.0.0/24
 
-  portal_network_cidr:
-    type: string
-    description: >
-      address range used by kubernetes for service portals
-    default: 10.254.0.0/16
-
   network_driver:
     type: string
     description: network driver to use for instantiating container networks
     default: flannel
-
-  flannel_network_cidr:
-    type: string
-    description: network range for flannel overlay network
-    default: 10.100.0.0/16
-
-  flannel_network_subnetlen:
-    type: number
-    description: size of subnet assigned to each minion
-    default: 24
-
-  flannel_backend:
-    type: string
-    description: >
-      specify the backend for flannel, default udp backend
-    default: "udp"
-    constraints:
-      - allowed_values: ["udp", "vxlan", "host-gw"]
-
-  system_pods_initial_delay:
-    type: number
-    description: >
-      health check, time to wait for system pods (podmaster, scheduler) to boot
-      (in seconds)
-    default: 30
-
-  system_pods_timeout:
-    type: number
-    description: >
-      health check, timeout for system pods (podmaster, scheduler) to answer.
-      (in seconds)
-    default: 5
-
-  admission_control_list:
-    type: string
-    description: >
-      List of admission control plugins to activate
-    default: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
-
-  kube_allow_priv:
-    type: string
-    description: >
-      whether or not kubernetes should permit privileged containers.
-    default: "true"
-    constraints:
-      - allowed_values: ["true", "false"]
-
-  etcd_volume_size:
-    type: number
-    description: >
-      size of the cinder volume for etcd storage
-    default: 0
 
   docker_volume_size:
     type: number
@@ -169,45 +111,6 @@ parameters:
       be empty when doing an create.
     default: []
 
-  discovery_url:
-    type: string
-    description: >
-      Discovery URL used for bootstrapping the etcd cluster.
-
-  registry_enabled:
-    type: boolean
-    description: >
-      Indicates whether the docker registry is enabled.
-    default: false
-
-  registry_port:
-    type: number
-    description: port of registry service
-    default: 5000
-
-  swift_region:
-    type: string
-    description: region of swift service
-    default: ""
-
-  registry_container:
-    type: string
-    description: >
-      name of swift container which docker registry stores images in
-    default: "container"
-
-  registry_insecure:
-    type: boolean
-    description: >
-      indicates whether to skip TLS verification between registry and backend storage
-    default: true
-
-  registry_chunksize:
-    type: number
-    description: >
-      size fo the data segments for the swift dynamic large objects
-    default: 5242880
-
   volume_driver:
     type: string
     description: volume driver to use for container storage
@@ -240,11 +143,6 @@ parameters:
     constraints:
       - allowed_values: ["TCP", "HTTP"]
 
-  tls_disabled:
-    type: boolean
-    description: whether or not to disable TLS
-    default: False
-
   kube_dashboard_enabled:
     type: boolean
     description: whether or not to enable kubernetes dashboard
@@ -258,13 +156,6 @@ parameters:
   verify_ca:
     type: boolean
     description: whether or not to validate certificate authority
-
-  kubernetes_port:
-    type: number
-    description: >
-      The port which are used by kube-apiserver to provide Kubernetes
-      service.
-    default: 6443
 
   cluster_uuid:
     type: string
@@ -320,21 +211,6 @@ parameters:
     description: tag of the k8s containers used to provision the kubernetes cluster
     default: v1.9.3
 
-  etcd_tag:
-    type: string
-    description: tag of the etcd system container
-    default: v3.2.7
-
-  flannel_tag:
-    type: string
-    description: tag of the flannel system containers
-    default: v0.9.0
-
-  kube_version:
-    type: string
-    description: version of kubernetes used for kubernetes cluster
-    default: v1.9.3
-
   kube_dashboard_version:
     type: string
     description: version of kubernetes dashboard used for kubernetes cluster
@@ -354,22 +230,11 @@ parameters:
       - allowed_pattern: "^$|.*/"
     default: ""
 
-  dns_service_ip:
-    type: string
-    description: >
-      address used by Kubernetes DNS service
-    default: 10.254.0.10
-
   dns_cluster_domain:
     type: string
     description: >
       domain name for cluster DNS
     default: "cluster.local"
-
-  openstack_ca:
-    type: string
-    hidden: true
-    description: The OpenStack CA certificate to install on the node.
 
   nodes_affinity_policy:
     type: string
@@ -396,30 +261,6 @@ parameters:
     default: ""
     hidden: true
 
-  calico_tag:
-    type: string
-    description: tag of the calico containers used to provision the calico node
-    default: v2.6.7
-
-  calico_cni_tag:
-    type: string
-    description: tag of the cni used to provision the calico node
-    default: v1.11.2
-
-  calico_kube_controllers_tag:
-    type: string
-    description: tag of the kube_controllers used to provision the calico node
-    default: v1.0.3
-
-  calico_ipv4pool:
-    type: string
-    description: Configure the IP pool from which Pod IPs will be chosen
-    default: "192.168.0.0/16"
-
-  pods_network_cidr:
-    type: string
-    description: Configure the IP pool/range from which pod IPs will be chosen
-
   ingress_controller:
     type: string
     description: >
@@ -432,34 +273,152 @@ parameters:
       node role where the ingress controller backend should run
     default: "ingress"
 
-  kubelet_options:
+  # Unused, but might be used in the future
+  registry_enabled:
+    type: boolean
+    description: >
+      Indicates whether the docker registry is enabled.
+    default: false
+
+  registry_port:
+    type: number
+    description: port of registry service
+    default: 5000
+
+  swift_region:
+    type: string
+    description: region of swift service
+    default: ""
+
+  registry_container:
     type: string
     description: >
-      additional options to be passed to the kubelet
+      name of swift container which docker registry stores images in
+    default: "container"
+
+  registry_insecure:
+    type: boolean
+    description: >
+      indicates whether to skip TLS verification between registry and backend storage
+    default: true
+
+  registry_chunksize:
+    type: number
+    description: >
+      size fo the data segments for the swift dynamic large objects
+    default: 5242880
+
+  # Unused but required by Magnum
+  kubelet_options:
+    type: string
     default: ""
 
   kubeapi_options:
     type: string
-    description: >
-      additional options to be passed to the api
     default: ""
 
   kubecontroller_options:
     type: string
-    description: >
-      additional options to be passed to the controller manager
     default: ""
 
   kubeproxy_options:
     type: string
-    description: >
-      additional options to be passed to the kube proxy
     default: ""
 
   kubescheduler_options:
     type: string
-    description: >
-      additional options to be passed to the scheduler
+    default: ""
+
+  admission_control_list:
+    type: string
+    default: ""
+
+  flannel_network_cidr:
+    type: string
+    default: ""
+
+  flannel_backend:
+    type: string
+    default: ""
+
+  flannel_network_subnetlen:
+    type: string
+    default: ""
+
+  system_pods_initial_delay:
+    type: string
+    default: ""
+
+  system_pods_timeout:
+    type: string
+    default: ""
+
+  etcd_volume_size:
+    type: string
+    default: ""
+
+  cert_manager_api:
+    type: string
+    default: ""
+
+  pods_network_cidr:
+    type: string
+    default: ""
+
+  openstack_ca:
+    type: string
+    default: ""
+
+  portal_network_cidr:
+    type: string
+    default: ""
+
+  kube_allow_priv:
+    type: string
+    default: ""
+
+  discovery_url:
+    type: string
+    default: ""
+
+  tls_disabled:
+    type: string
+    default: ""
+
+  kubernetes_port:
+    type: string
+    default: ""
+
+  etcd_tag:
+    type: string
+    default: ""
+
+  flannel_tag:
+    type: string
+    default: ""
+
+  kube_version:
+    type: string
+    default: ""
+
+  dns_service_ip:
+    type: string
+    default: ""
+
+  calico_tag:
+    type: string
+    default: ""
+
+  calico_cni_tag:
+    type: string
+    default: ""
+
+  calico_kube_controllers_tag:
+    type: string
+    default: ""
+
+  calico_ipv4pool:
+    type: string
     default: ""
 
 resources:
@@ -473,7 +432,6 @@ resources:
   #
 
   network:
-    # JT
     type: ../common/network.yaml
     properties:
       existing_network: {get_param: fixed_network}
@@ -483,22 +441,12 @@ resources:
       external_network: {get_param: external_network}
 
   api_lb:
-    # JT
     type: ../common/lb.yaml
     properties:
       fixed_subnet: {get_attr: [network, fixed_subnet]}
       external_network: {get_param: external_network}
       protocol: {get_param: loadbalancing_protocol}
-      port: {get_param: kubernetes_port}
-
-  etcd_lb:
-    # JT
-    type: ../common/lb.yaml
-    properties:
-      fixed_subnet: {get_attr: [network, fixed_subnet]}
-      external_network: {get_param: external_network}
-      protocol: {get_param: loadbalancing_protocol}
-      port: 2379
+      port: 6443
 
   ######################################################################
   #
@@ -515,25 +463,19 @@ resources:
           port_range_min: 22
           port_range_max: 22
         - protocol: tcp
-          port_range_min: 7080
-          port_range_max: 7080
-        - protocol: tcp
-          port_range_min: 8080
-          port_range_max: 8080
-        - protocol: tcp
-          port_range_min: 2379
-          port_range_max: 2379
-        - protocol: tcp
-          port_range_min: 2380
-          port_range_max: 2380
-        - protocol: tcp
           port_range_min: 6443
           port_range_max: 6443
         - protocol: tcp
-          port_range_min: 30000
-          port_range_max: 32767
+          port_range_min: 1
+          port_range_max: 65535
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_kube_minion }
+        - protocol: udp
+          port_range_min: 1
+          port_range_max: 65535
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_kube_minion }
 
-        # JT
         - protocol: icmp
           ethertype: IPv6
         - protocol: tcp
@@ -541,28 +483,8 @@ resources:
           port_range_max: 22
           ethertype: IPv6
         - protocol: tcp
-          port_range_min: 7080
-          port_range_max: 7080
-          ethertype: IPv6
-        - protocol: tcp
-          port_range_min: 8080
-          port_range_max: 8080
-          ethertype: IPv6
-        - protocol: tcp
-          port_range_min: 2379
-          port_range_max: 2379
-          ethertype: IPv6
-        - protocol: tcp
-          port_range_min: 2380
-          port_range_max: 2380
-          ethertype: IPv6
-        - protocol: tcp
           port_range_min: 6443
           port_range_max: 6443
-          ethertype: IPv6
-        - protocol: tcp
-          port_range_min: 30000
-          port_range_max: 32767
           ethertype: IPv6
 
   secgroup_kube_minion:
@@ -573,7 +495,6 @@ resources:
         - protocol: tcp
         - protocol: udp
 
-        # JT
         - protocol: icmp
           ethertype: IPv6
         - protocol: tcp
@@ -595,12 +516,6 @@ resources:
       master_public_ip: {get_attr: [kube_masters, resource.0.kube_master_external_ip]}
       master_private_ip: {get_attr: [kube_masters, resource.0.kube_master_ip]}
 
-  etcd_address_lb_switch:
-    type: Magnum::ApiGatewaySwitcher
-    properties:
-      pool_private_ip: {get_attr: [etcd_lb, address]}
-      master_private_ip: {get_attr: [kube_masters, resource.0.kube_master_ip]}
-
   ######################################################################
   #
   # resources that expose the IPs of either floating ip or a given
@@ -610,8 +525,6 @@ resources:
   api_address_floating_switch:
     type: Magnum::FloatingIPAddressSwitcher
     properties:
-      # JT
-      #public_ip: {get_attr: [api_address_lb_switch, public_ip]}
       public_ip: {get_attr: [api_address_lb_switch, private_ip]}
       private_ip: {get_attr: [api_address_lb_switch, private_ip]}
 
@@ -653,32 +566,19 @@ resources:
           server_image: {get_param: server_image}
           master_flavor: {get_param: master_flavor}
           external_network: {get_param: external_network}
-          kube_allow_priv: {get_param: kube_allow_priv}
-          etcd_volume_size: {get_param: etcd_volume_size}
           docker_volume_size: {get_param: docker_volume_size}
           docker_volume_type: {get_param: docker_volume_type}
           docker_storage_driver: {get_param: docker_storage_driver}
           wait_condition_timeout: {get_param: wait_condition_timeout}
           network_driver: {get_param: network_driver}
-          flannel_network_cidr: {get_param: flannel_network_cidr}
-          flannel_network_subnetlen: {get_param: flannel_network_subnetlen}
-          flannel_backend: {get_param: flannel_backend}
-          system_pods_initial_delay: {get_param: system_pods_initial_delay}
-          system_pods_timeout: {get_param: system_pods_timeout}
-          portal_network_cidr: {get_param: portal_network_cidr}
-          admission_control_list: {get_param: admission_control_list}
-          discovery_url: {get_param: discovery_url}
           cluster_uuid: {get_param: cluster_uuid}
           magnum_url: {get_param: magnum_url}
           volume_driver: {get_param: volume_driver}
           fixed_network: {get_attr: [network, fixed_network]}
           fixed_subnet: {get_attr: [network, fixed_subnet]}
           api_pool_id: {get_attr: [api_lb, pool_id]}
-          etcd_pool_id: {get_attr: [etcd_lb, pool_id]}
           username: {get_param: username}
           password: {get_param: password}
-          kubernetes_port: {get_param: kubernetes_port}
-          tls_disabled: {get_param: tls_disabled}
           kube_dashboard_enabled: {get_param: kube_dashboard_enabled}
           influx_grafana_dashboard_enabled: {get_param: influx_grafana_dashboard_enabled}
           verify_ca: {get_param: verify_ca}
@@ -687,8 +587,6 @@ resources:
           https_proxy: {get_param: https_proxy}
           no_proxy: {get_param: no_proxy}
           kube_tag: {get_param: kube_tag}
-          kube_version: {get_param: kube_version}
-          etcd_tag: {get_param: etcd_tag}
           kube_dashboard_version: {get_param: kube_dashboard_version}
           trustee_user_id: {get_param: trustee_user_id}
           trustee_password: {get_param: trustee_password}
@@ -696,26 +594,13 @@ resources:
           auth_url: {get_param: auth_url}
           insecure_registry_url: {get_param: insecure_registry_url}
           container_infra_prefix: {get_param: container_infra_prefix}
-          etcd_lb_vip: {get_attr: [etcd_lb, address]}
-          dns_service_ip: {get_param: dns_service_ip}
           dns_cluster_domain: {get_param: dns_cluster_domain}
-          openstack_ca: {get_param: openstack_ca}
           nodes_server_group_id: {get_resource: nodes_server_group}
           availability_zone: {get_param: availability_zone}
           ca_key: {get_param: ca_key}
           cert_manager_api: {get_param: cert_manager_api}
-          calico_tag: {get_param: calico_tag}
-          calico_cni_tag: {get_param: calico_cni_tag}
-          calico_kube_controllers_tag: {get_param: calico_kube_controllers_tag}
-          calico_ipv4pool: {get_param: calico_ipv4pool}
-          pods_network_cidr: {get_param: pods_network_cidr}
           ingress_controller: {get_param: ingress_controller}
           ingress_controller_role: {get_param: ingress_controller_role}
-          kubelet_options: {get_param: kubelet_options}
-          kubeapi_options: {get_param: kubeapi_options}
-          kubeproxy_options: {get_param: kubeproxy_options}
-          kubecontroller_options: {get_param: kubecontroller_options}
-          kubescheduler_options: {get_param: kubescheduler_options}
 
   ######################################################################
   #
@@ -744,11 +629,8 @@ resources:
           fixed_network: {get_attr: [network, fixed_network]}
           fixed_subnet: {get_attr: [network, fixed_subnet]}
           network_driver: {get_param: network_driver}
-          flannel_network_cidr: {get_param: flannel_network_cidr}
           kube_master_ip: {get_attr: [api_address_lb_switch, private_ip]}
-          etcd_server_ip: {get_attr: [etcd_address_lb_switch, private_ip]}
           external_network: {get_param: external_network}
-          kube_allow_priv: {get_param: kube_allow_priv}
           docker_volume_size: {get_param: docker_volume_size}
           docker_volume_type: {get_param: docker_volume_type}
           docker_storage_driver: {get_param: docker_storage_driver}
@@ -766,16 +648,12 @@ resources:
           auth_url: {get_param: auth_url}
           username: {get_param: username}
           password: {get_param: password}
-          kubernetes_port: {get_param: kubernetes_port}
-          tls_disabled: {get_param: tls_disabled}
           verify_ca: {get_param: verify_ca}
           secgroup_kube_minion_id: {get_resource: secgroup_kube_minion}
           http_proxy: {get_param: http_proxy}
           https_proxy: {get_param: https_proxy}
           no_proxy: {get_param: no_proxy}
           kube_tag: {get_param: kube_tag}
-          kube_version: {get_param: kube_version}
-          flannel_tag: {get_param: flannel_tag}
           trustee_user_id: {get_param: trustee_user_id}
           trustee_username: {get_param: trustee_username}
           trustee_password: {get_param: trustee_password}
@@ -783,14 +661,9 @@ resources:
           trust_id: {get_param: trust_id}
           insecure_registry_url: {get_param: insecure_registry_url}
           container_infra_prefix: {get_param: container_infra_prefix}
-          dns_service_ip: {get_param: dns_service_ip}
           dns_cluster_domain: {get_param: dns_cluster_domain}
-          openstack_ca: {get_param: openstack_ca}
           nodes_server_group_id: {get_resource: nodes_server_group}
           availability_zone: {get_param: availability_zone}
-          pods_network_cidr: {get_param: pods_network_cidr}
-          kubelet_options: {get_param: kubelet_options}
-          kubeproxy_options: {get_param: kubeproxy_options}
           join_command: {get_attr: [kube_masters, resource.0.join_command]}
 
 outputs:

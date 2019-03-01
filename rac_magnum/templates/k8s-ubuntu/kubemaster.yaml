@@ -27,23 +27,6 @@ parameters:
     type: string
     description: uuid/name of a network to use for floating ip addresses
 
-  portal_network_cidr:
-    type: string
-    description: >
-      address range used by kubernetes for service portals
-
-  kube_allow_priv:
-    type: string
-    description: >
-      whether or not kubernetes should permit privileged containers.
-    constraints:
-      - allowed_values: ["true", "false"]
-
-  etcd_volume_size:
-    type: number
-    description: >
-      size of a cinder volume to allocate for etcd storage
-
   docker_volume_size:
     type: number
     description: >
@@ -65,49 +48,6 @@ parameters:
     type: string
     description: volume driver to use for container storage
 
-  flannel_network_cidr:
-    type: string
-    description: network range for flannel overlay network
-
-  flannel_network_subnetlen:
-    type: number
-    description: size of subnet assigned to each master
-
-  flannel_backend:
-    type: string
-    description: >
-      specify the backend for flannel, default udp backend
-    constraints:
-      - allowed_values: ["udp", "vxlan", "host-gw"]
-
-  system_pods_initial_delay:
-    type: number
-    description: >
-      health check, time to wait for system pods (podmaster, scheduler) to boot
-      (in seconds)
-    default: 30
-
-  system_pods_timeout:
-    type: number
-    description: >
-      health check, timeout for system pods (podmaster, scheduler) to answer.
-      (in seconds)
-    default: 5
-
-  admission_control_list:
-    type: string
-    description: >
-      List of admission control plugins to activate
-
-  discovery_url:
-    type: string
-    description: >
-      Discovery URL used for bootstrapping the etcd cluster.
-
-  tls_disabled:
-    type: boolean
-    description: whether or not to enable TLS
-
   kube_dashboard_enabled:
     type: boolean
     description: whether or not to disable kubernetes dashboard
@@ -119,12 +59,6 @@ parameters:
   verify_ca:
     type: boolean
     description: whether or not to validate certificate authority
-
-  kubernetes_port:
-    type: number
-    description: >
-      The port which are used by kube-apiserver to provide Kubernetes
-      service.
 
   cluster_uuid:
     type: string
@@ -185,10 +119,6 @@ parameters:
     type: string
     description: ID of the load balancer pool of k8s API server.
 
-  etcd_pool_id:
-    type: string
-    description: ID of the load balancer pool of etcd server.
-
   auth_url:
     type: string
     description: >
@@ -220,14 +150,6 @@ parameters:
     type: string
     description: tag of the k8s containers used to provision the kubernetes cluster
 
-  etcd_tag:
-    type: string
-    description: tag of the etcd system container
-
-  kube_version:
-    type: string
-    description: version of kubernetes used for kubernetes cluster
-
   kube_dashboard_version:
     type: string
     description: version of kubernetes dashboard used for kubernetes cluster
@@ -256,25 +178,10 @@ parameters:
       prefix of container images used in the cluster, kubernetes components,
       kubernetes-dashboard, coredns etc
 
-  etcd_lb_vip:
-    type: string
-    description: >
-      etcd lb vip private used to generate certs on master.
-    default: ""
-
-  dns_service_ip:
-    type: string
-    description: >
-      address used by Kubernetes DNS service
-
   dns_cluster_domain:
     type: string
     description: >
       domain name for cluster DNS
-
-  openstack_ca:
-    type: string
-    description: The OpenStack CA certificate to install on the node.
 
   nodes_server_group_id:
     type: string
@@ -296,26 +203,6 @@ parameters:
     description: true if the kubernetes cert api manager should be enabled
     default: false
 
-  calico_tag:
-    type: string
-    description: tag of the calico containers used to provision the calico node
-
-  calico_cni_tag:
-    type: string
-    description: tag of the cni used to provision the calico node
-
-  calico_kube_controllers_tag:
-    type: string
-    description: tag of the kube_controllers used to provision the calico node
-
-  calico_ipv4pool:
-    type: string
-    description: Configure the IP pool from which Pod IPs will be chosen
-
-  pods_network_cidr:
-    type: string
-    description: Configure the IP pool/range from which pod IPs will be chosen
-
   ingress_controller:
     type: string
     description: >
@@ -325,31 +212,6 @@ parameters:
     type: string
     description: >
       node role where the ingress controller should run
-
-  kubelet_options:
-    type: string
-    description: >
-      additional options to be passed to the kubelet
-
-  kubeapi_options:
-    type: string
-    description: >
-      additional options to be passed to the api
-
-  kubecontroller_options:
-    type: string
-    description: >
-      additional options to be passed to the controller manager
-
-  kubeproxy_options:
-    type: string
-    description: >
-      additional options to be passed to the kube proxy
-
-  kubescheduler_options:
-    type: string
-    description: >
-      additional options to be passed to the scheduler
 
 resources:
 
@@ -389,41 +251,21 @@ resources:
       group: ungrouped
       config:
         str_replace:
-          # JT
           template: {get_file: fragments/write-heat-params-master.yaml}
           params:
             "$PROMETHEUS_MONITORING": {get_param: prometheus_monitoring}
-            # JT
-            # Set the API IP to the private IP.
-            # This gets around some weird floating IP connectivity issue within the
-            # controller
             "$KUBE_API_PUBLIC_ADDRESS": {get_attr: [api_address_switch, private_ip]}
-            #"$KUBE_API_PUBLIC_ADDRESS": {get_attr: [api_address_switch, public_ip]}
             "$KUBE_API_PRIVATE_ADDRESS": {get_attr: [api_address_switch, private_ip]}
-            "$KUBE_API_PORT": {get_param: kubernetes_port}
             "$KUBE_NODE_PUBLIC_IP": {get_attr: [kube_master_floating, floating_ip_address]}
             "$KUBE_NODE_IP": {get_attr: [kube_master_eth0, fixed_ips, 0, ip_address]}
-            "$KUBE_ALLOW_PRIV": {get_param: kube_allow_priv}
-            "$ETCD_VOLUME": {get_resource: etcd_volume}
-            "$ETCD_VOLUME_SIZE": {get_param: etcd_volume_size}
             "$DOCKER_VOLUME": {get_resource: docker_volume}
             "$DOCKER_VOLUME_SIZE": {get_param: docker_volume_size}
             "$DOCKER_STORAGE_DRIVER": {get_param: docker_storage_driver}
             "$NETWORK_DRIVER": {get_param: network_driver}
-            "$FLANNEL_NETWORK_CIDR": {get_param: flannel_network_cidr}
-            "$FLANNEL_NETWORK_SUBNETLEN": {get_param: flannel_network_subnetlen}
-            "$FLANNEL_BACKEND": {get_param: flannel_backend}
-            "$SYSTEM_PODS_INITIAL_DELAY": {get_param: system_pods_initial_delay}
-            "$SYSTEM_PODS_TIMEOUT": {get_param: system_pods_timeout}
-            "$PODS_NETWORK_CIDR": {get_param: pods_network_cidr}
-            "$PORTAL_NETWORK_CIDR": {get_param: portal_network_cidr}
-            "$ADMISSION_CONTROL_LIST": {get_param: admission_control_list}
-            "$ETCD_DISCOVERY_URL": {get_param: discovery_url}
             "$AUTH_URL": {get_param: auth_url}
             "$USERNAME": {get_param: username}
             "$PASSWORD": {get_param: password}
             "$CLUSTER_SUBNET": {get_param: fixed_subnet}
-            "$TLS_DISABLED": {get_param: tls_disabled}
             "$KUBE_DASHBOARD_ENABLED": {get_param: kube_dashboard_enabled}
             "$INFLUX_GRAFANA_DASHBOARD_ENABLED": {get_param: influx_grafana_dashboard_enabled}
             "$VERIFY_CA": {get_param: verify_ca}
@@ -434,8 +276,6 @@ resources:
             "$HTTPS_PROXY": {get_param: https_proxy}
             "$NO_PROXY": {get_param: no_proxy}
             "$KUBE_TAG": {get_param: kube_tag}
-            "$ETCD_TAG": {get_param: etcd_tag}
-            "$KUBE_VERSION": {get_param: kube_version}
             "$KUBE_DASHBOARD_VERSION": {get_param: kube_dashboard_version}
             "$WAIT_CURL": {get_attr: [master_wait_handle, curl_cli]}
             "$TRUSTEE_USER_ID": {get_param: trustee_user_id}
@@ -443,36 +283,12 @@ resources:
             "$TRUST_ID": {get_param: trust_id}
             "$INSECURE_REGISTRY_URL": {get_param: insecure_registry_url}
             "$CONTAINER_INFRA_PREFIX": {get_param: container_infra_prefix}
-            "$ETCD_LB_VIP": {get_param: etcd_lb_vip}
-            "$DNS_SERVICE_IP": {get_param: dns_service_ip}
             "$DNS_CLUSTER_DOMAIN": {get_param: dns_cluster_domain}
             "$CERT_MANAGER_API": {get_param: cert_manager_api}
             "$CA_KEY": {get_param: ca_key}
-            "$CALICO_TAG": {get_param: calico_tag}
-            "$CALICO_CNI_TAG": {get_param: calico_cni_tag}
-            "$CALICO_KUBE_CONTROLLERS_TAG": {get_param: calico_kube_controllers_tag}
-            "$CALICO_IPV4POOL": {get_param: calico_ipv4pool}
             "$INGRESS_CONTROLLER": {get_param: ingress_controller}
             "$INGRESS_CONTROLLER_ROLE": {get_param: ingress_controller_role}
-            "$KUBELET_OPTIONS": {get_param: kubelet_options}
-            "$KUBEAPI_OPTIONS": {get_param: kubeapi_options}
-            "$KUBECONTROLLER_OPTIONS": {get_param: kubecontroller_options}
-            "$KUBEPROXY_OPTIONS": {get_param: kubeproxy_options}
-            "$KUBESCHEDULER_OPTIONS": {get_param: kubescheduler_options}
-            # JT
             "$KUBE_NODE_IPV6": {get_attr: [kube_master_eth0, fixed_ips, 1, ip_address]}
-
-  # MF
-  # install_openstack_ca:
-  #   type: OS::Heat::SoftwareConfig
-  #   properties:
-  #     group: ungrouped
-  #     config:
-  #       str_replace:
-  #         params:
-  #           $OPENSTACK_CA: {get_param: openstack_ca}
-  #         # JT
-  #         template: {get_file: ../common/fragments/atomic-install-openstack-ca.sh}
 
   install_heat_tools:
     type: "OS::Heat::SoftwareConfig"
@@ -510,7 +326,6 @@ resources:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
-        # JT
       config: {get_file: fragments/remove-docker-key.sh}
 
   configure_docker_storage:
@@ -525,88 +340,52 @@ resources:
       group: ungrouped
       config: {get_file: fragments/make-cert.sh}
 
-  #add_docker_daemon_options:
-  #  type: "OS::Heat::SoftwareConfig"
-  #  properties:
-  #    group: ungrouped
-  #    # JT
-  #    config: {get_file: fragments/add-docker-daemon-options.sh}
-
-  # configure_etcd:
-  #   type: OS::Heat::SoftwareConfig
-  #   properties:
-  #     group: ungrouped
-  #     # JT
-  #     config: {get_file: fragments/configure-etcd.sh}
-
   write_kube_os_config:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/write-kube-os-config.sh}
 
   configure_kubernetes:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/configure-kubernetes-master.sh}
-
-  # write_network_config:
-  #   type: OS::Heat::SoftwareConfig
-  #   properties:
-  #     group: ungrouped
-  #     # JT
-  #     config: {get_file: fragments/write-network-config.sh}
 
   network_config_service:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/network-config-service.sh}
 
   enable_services:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/enable-services-master.sh}
 
   kube_apiserver_to_kubelet_role:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/kube-apiserver-to-kubelet-role.sh}
-
-  # core_dns_service:
-  #   type: OS::Heat::SoftwareConfig
-  #   properties:
-  #     group: ungrouped
-  #     # JT
-  #     config: {get_file: fragments/core-dns-service.sh}
 
   master_wc_notify:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/wc-notify-master.sh}
 
   add_proxy:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/add-proxy.sh}
 
   start_container_agent:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/start-container-agent.sh}
 
   kube_master_init:
@@ -622,12 +401,9 @@ resources:
         - config: {get_resource: make_cert}
         - config: {get_resource: configure_kubernetes}
         - config: {get_resource: add_proxy}
-        - config: {get_resource: enable_services}
         - config: {get_resource: network_config_service}
-        - config: {get_resource: kube_apiserver_to_kubelet_role}
         - config: {get_resource: master_wc_notify}
         - config: {get_resource: configure_config_agent}
-        - config: {get_resource: start_config_agent}
 
   enable_prometheus_monitoring:
     type: OS::Heat::SoftwareConfig
@@ -635,7 +411,6 @@ resources:
       group: script
       config:
         str_replace:
-          # JT
           template: {get_file: fragments/enable-prometheus-monitoring}
           params:
             "$ADMIN_PASSWD": {get_param: grafana_admin_passwd}
@@ -648,40 +423,6 @@ resources:
       server: {get_resource: kube-master}
       actions: ['CREATE']
 
-  enable_cert_manager_api:
-    type: OS::Heat::SoftwareConfig
-    properties:
-      group: script
-      config:
-        str_replace:
-          # JT
-          template: {get_file: fragments/enable-cert-api-manager}
-          params:
-            "$CA_KEY": {get_param: ca_key}
-
-  enable_cert_manager_api_deployment:
-    type: OS::Heat::SoftwareDeployment
-    properties:
-      signal_transport: HEAT_SIGNAL
-      config: {get_resource: enable_cert_manager_api}
-      server: {get_resource: kube-master}
-      actions: ['CREATE']
-
-  calico_service:
-    type: OS::Heat::SoftwareConfig
-    properties:
-      group: script
-      # JT
-      config: {get_file: fragments/calico-service.sh}
-
-  calico_service_deployment:
-    type: OS::Heat::SoftwareDeployment
-    properties:
-      signal_transport: HEAT_SIGNAL
-      config: {get_resource: calico_service}
-      server: {get_resource: kube-master}
-      actions: ['CREATE']
-
   enable_ingress_controller:
     type: OS::Heat::SoftwareConfig
     properties:
@@ -689,9 +430,7 @@ resources:
       config:
         str_replace:
           params:
-            # JT
             $enable-ingress-traefik: {get_file: fragments/enable-ingress-traefik}
-          # JT
           template: {get_file: fragments/enable-ingress-controller}
 
   enable_ingress_controller_deployment:
@@ -706,7 +445,6 @@ resources:
     type: OS::Heat::SoftwareConfig
     properties:
       group: script
-      # JT
       config: {get_file: fragments/kube-dashboard-service.sh}
 
   kubernetes_dashboard_deployment:
@@ -717,7 +455,6 @@ resources:
       server: {get_resource: kube-master}
       actions: ['CREATE']
 
-  # JT
   kubernetes_join_command:
     type: OS::Heat::SoftwareConfig
     properties:
@@ -762,12 +499,6 @@ resources:
       network: {get_param: fixed_network}
       security_groups:
         - {get_param: secgroup_kube_master_id}
-      # JT
-      #fixed_ips:
-      #  - subnet: {get_param: fixed_subnet}
-      #allowed_address_pairs:
-      #  - ip_address: {get_param: pods_network_cidr}
-      #replacement_policy: AUTO
 
   kube_master_floating:
     type: Magnum::Optional::KubeMaster::Neutron::FloatingIP
@@ -781,33 +512,7 @@ resources:
       pool: {get_param: api_pool_id}
       address: {get_attr: [kube_master_eth0, fixed_ips, 0, ip_address]}
       subnet: { get_param: fixed_subnet }
-      protocol_port: {get_param: kubernetes_port}
-
-  etcd_pool_member:
-    type: Magnum::Optional::Neutron::LBaaS::PoolMember
-    properties:
-      pool: {get_param: etcd_pool_id}
-      address: {get_attr: [kube_master_eth0, fixed_ips, 0, ip_address]}
-      subnet: { get_param: fixed_subnet }
-      protocol_port: 2379
-
-  ######################################################################
-  #
-  # etcd storage.  This allocates a cinder volume and attaches it
-  # to the master.
-  #
-
-  etcd_volume:
-    type: Magnum::Optional::Etcd::Volume
-    properties:
-      size: {get_param: etcd_volume_size}
-
-  etcd_volume_attach:
-    type: Magnum::Optional::Etcd::VolumeAttachment
-    properties:
-      instance_uuid: {get_resource: kube-master}
-      volume_id: {get_resource: etcd_volume}
-      mountpoint: /dev/vdc
+      protocol_port: 6443
 
   ######################################################################
   #

@@ -27,13 +27,6 @@ parameters:
     type: string
     description: uuid/name of a network to use for floating ip addresses
 
-  kube_allow_priv:
-    type: string
-    description: >
-      whether or not kubernetes should permit privileged containers.
-    constraints:
-      - allowed_values: ["true", "false"]
-
   docker_volume_size:
     type: number
     description: >
@@ -51,19 +44,9 @@ parameters:
     description: docker storage driver name
     default: "devicemapper"
 
-  tls_disabled:
-    type: boolean
-    description: whether or not to enable TLS
-
   verify_ca:
     type: boolean
     description: whether or not to validate certificate authority
-
-  kubernetes_port:
-    type: number
-    description: >
-      The port which are used by kube-apiserver to provide Kubernetes
-      service.
 
   cluster_uuid:
     type: string
@@ -82,10 +65,6 @@ parameters:
     type: string
     description: IP address of the Kubernetes master server.
 
-  etcd_server_ip:
-    type: string
-    description: IP address of the Etcd server.
-
   fixed_network:
     type: string
     description: Network from which to allocate fixed addresses.
@@ -97,10 +76,6 @@ parameters:
   network_driver:
     type: string
     description: network driver to use for instantiating container networks
-
-  flannel_network_cidr:
-    type: string
-    description: network range for flannel overlay network
 
   wait_condition_timeout:
     type: number
@@ -175,14 +150,6 @@ parameters:
     type: string
     description: tag of the k8s containers used to provision the kubernetes cluster
 
-  flannel_tag:
-    type: string
-    description: tag of the flannel system containers
-
-  kube_version:
-    type: string
-    description: version of kubernetes used for kubernetes cluster
-
   trustee_domain_id:
     type: string
     description: domain id of the trustee
@@ -221,19 +188,10 @@ parameters:
       prefix of container images used in the cluster, kubernetes components,
       kubernetes-dashboard, coredns etc
 
-  dns_service_ip:
-    type: string
-    description: >
-      address used by Kubernetes DNS service
-
   dns_cluster_domain:
     type: string
     description: >
       domain name for cluster DNS
-
-  openstack_ca:
-    type: string
-    description: The OpenStack CA certificate to install on the node.
 
   nodes_server_group_id:
     type: string
@@ -244,20 +202,6 @@ parameters:
     description: >
       availability zone for master and nodes
     default: ""
-
-  pods_network_cidr:
-    type: string
-    description: Configure the IP pool/range from which pod IPs will be chosen
-
-  kubelet_options:
-    type: string
-    description: >
-      additional options to be passed to the kubelet
-
-  kubeproxy_options:
-    type: string
-    description: >
-      additional options to be passed to the kube proxy
 
   join_command:
     type: string
@@ -288,18 +232,12 @@ resources:
       group: ungrouped
       config:
         str_replace:
-          # JT
           template: {get_file: fragments/write-heat-params.yaml}
           params:
             $PROMETHEUS_MONITORING: {get_param: prometheus_monitoring}
-            $KUBE_ALLOW_PRIV: {get_param: kube_allow_priv}
             $KUBE_MASTER_IP: {get_param: kube_master_ip}
-            $KUBE_API_PORT: {get_param: kubernetes_port}
-            # JT
-            #$KUBE_NODE_PUBLIC_IP: {get_attr: [kube_minion_floating, floating_ip_address]}
             $KUBE_NODE_PUBLIC_IP: {get_attr: [kube_minion_eth0, fixed_ips, 0, ip_address]}
             $KUBE_NODE_IP: {get_attr: [kube_minion_eth0, fixed_ips, 0, ip_address]}
-            $ETCD_SERVER_IP: {get_param: etcd_server_ip}
             $DOCKER_VOLUME: {get_resource: docker_volume}
             $DOCKER_VOLUME_SIZE: {get_param: docker_volume_size}
             $DOCKER_STORAGE_DRIVER: {get_param: docker_storage_driver}
@@ -310,7 +248,6 @@ resources:
             $REGISTRY_CONTAINER: {get_param: registry_container}
             $REGISTRY_INSECURE: {get_param: registry_insecure}
             $REGISTRY_CHUNKSIZE: {get_param: registry_chunksize}
-            $TLS_DISABLED: {get_param: tls_disabled}
             $VERIFY_CA: {get_param: verify_ca}
             $CLUSTER_UUID: {get_param: cluster_uuid}
             $MAGNUM_URL: {get_param: magnum_url}
@@ -322,8 +259,6 @@ resources:
             $HTTPS_PROXY: {get_param: https_proxy}
             $NO_PROXY: {get_param: no_proxy}
             $KUBE_TAG: {get_param: kube_tag}
-            $FLANNEL_TAG: {get_param: flannel_tag}
-            $KUBE_VERSION: {get_param: kube_version}
             $WAIT_CURL: {get_attr: [minion_wait_handle, curl_cli]}
             $TRUSTEE_USER_ID: {get_param: trustee_user_id}
             $TRUSTEE_PASSWORD: {get_param: trustee_password}
@@ -331,27 +266,10 @@ resources:
             $AUTH_URL: {get_param: auth_url}
             $INSECURE_REGISTRY_URL: {get_param: insecure_registry_url}
             $CONTAINER_INFRA_PREFIX: {get_param: container_infra_prefix}
-            $DNS_SERVICE_IP: {get_param: dns_service_ip}
             $DNS_CLUSTER_DOMAIN: {get_param: dns_cluster_domain}
-            $KUBELET_OPTIONS: {get_param: kubelet_options}
-            $KUBEPROXY_OPTIONS: {get_param: kubeproxy_options}
-            # JT
             $KUBE_NODE_IPV6: {get_attr: [kube_minion_eth0, fixed_ips, 1, ip_address]}
             $JOIN_COMMAND: {get_param: join_command}
 
-  # MF
-  # install_openstack_ca:
-  #   type: OS::Heat::SoftwareConfig
-  #   properties:
-  #     group: ungrouped
-  #     config:
-  #       str_replace:
-  #         params:
-  #           $OPENSTACK_CA: {get_param: openstack_ca}
-  #         # JT
-  #         template: {get_file: ../common/fragments/atomic-install-openstack-ca.sh}
-
-  # JT
   install_docker:
     type: "OS::Heat::SoftwareConfig"
     properties:
@@ -362,22 +280,13 @@ resources:
     type: "OS::Heat::SoftwareConfig"
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/remove-docker-key.sh}
 
   write_kube_os_config:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/write-kube-os-config.sh}
-
-  #make_cert:
-  #  type: OS::Heat::SoftwareConfig
-  #  properties:
-  #    group: ungrouped
-  #    # JT
-  #    config: {get_file: fragments/make-cert-client.sh}
 
   configure_docker_storage:
     type: OS::Heat::SoftwareConfig
@@ -385,53 +294,22 @@ resources:
       group: ungrouped
       config: {get_file: fragments/configure-docker-storage.sh}
 
-  #add_docker_daemon_options:
-  #  type: "OS::Heat::SoftwareConfig"
-  #  properties:
-  #    group: ungrouped
-  #    # JT
-  #    config: {get_file: fragments/add-docker-daemon-options.sh}
-
-  #configure_docker_registry:
-  #  type: OS::Heat::SoftwareConfig
-  #  properties:
-  #    group: ungrouped
-  #    # JT
-  #    config: {get_file: ../common/fragments/configure-docker-registry.sh}
-
   configure_kubernetes_minion:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/configure-kubernetes-minion.sh}
-
-  #network_service:
-  #  type: OS::Heat::SoftwareConfig
-  #  properties:
-  #    group: ungrouped
-  #    # JT
-  #    config: {get_file: fragments/network-service.sh}
 
   enable_services:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/enable-services-minion.sh}
-
-  #enable_docker_registry:
-  #  type: OS::Heat::SoftwareConfig
-  #  properties:
-  #    group: ungrouped
-  #    # JT
-  #    config: {get_file: ../common/fragments/enable-docker-registry.sh}
 
   enable_node_exporter:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/enable-node-exporter.sh}
 
   minion_wc_notify:
@@ -452,18 +330,10 @@ resources:
             wc_notify: {get_attr: [minion_wait_handle, curl_cli]}
             verify_ca: {get_param: verify_ca}
 
-  # disable_selinux:
-  #   type: OS::Heat::SoftwareConfig
-  #   properties:
-  #     group: ungrouped
-  #     # JT
-  #     config: {get_file: fragments/disable-selinux.sh}
-
   add_proxy:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
-      # JT
       config: {get_file: fragments/add-proxy.sh}
 
   kube_minion_init:
@@ -509,12 +379,6 @@ resources:
       network: {get_param: fixed_network}
       security_groups:
         - get_param: secgroup_kube_minion_id
-      # JT
-      #fixed_ips:
-      #  - subnet: {get_param: fixed_subnet}
-      #allowed_address_pairs:
-      #  - ip_address: {get_param: pods_network_cidr}
-      #replacement_policy: AUTO
 
   # JT
   # note: the way Magnum::Optional::KubeMinion::Neutron::FloatingIP is configured,
