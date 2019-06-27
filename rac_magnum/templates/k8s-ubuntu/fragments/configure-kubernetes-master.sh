@@ -2,6 +2,8 @@
 
 . /etc/default/heat-params
 
+export DEBIAN_FRONTEND=noninteractive
+
 echo "configuring kubernetes (master)"
 
 #install k8s Ubuntu

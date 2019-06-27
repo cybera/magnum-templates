@@ -2,6 +2,8 @@
 
 . /etc/default/heat-params
 
+export DEBIAN_FRONTEND=noninteractive
+
 #install k8s Ubuntu
 sudo apt-get install -y apt-transport-https
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -

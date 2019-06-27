@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export DEBIAN_FRONTEND=noninteractive
+
 # Enable security updates
 /usr/local/bin/enableAutoUpdate
 

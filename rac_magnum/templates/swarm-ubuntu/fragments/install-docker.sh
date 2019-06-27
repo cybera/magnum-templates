@@ -2,6 +2,8 @@
 
 DOCKER_VERSION=18.06
 
+export DEBIAN_FRONTEND=noninteractive
+
 # Fix swap
 swapdisk=$(lsblk -fs | grep swap | awk '{print $1}')
 swaplabel -L swap0 /dev/$swapdisk
