@@ -28,14 +28,11 @@ KUBE_DASH_DEPLOY=/srv/magnum/kubernetes/kubernetes-dashboard.yaml
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Configuration to deploy release version of the Dashboard UI compatible with
 # Kubernetes 1.8.
 #
 # Example usage: kubectl create -f <this_file>
-
 # ------------------- Dashboard Secret ------------------- #
-
 apiVersion: v1
 kind: Secret
 metadata:
@@ -44,10 +41,8 @@ metadata:
   name: kubernetes-dashboard-certs
   namespace: kube-system
 type: Opaque
-
 ---
 # ------------------- Dashboard Service Account ------------------- #
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -55,10 +50,8 @@ metadata:
     k8s-app: kubernetes-dashboard
   name: kubernetes-dashboard
   namespace: kube-system
-
 ---
 # ------------------- Dashboard Role & Role Binding ------------------- #
-
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -92,7 +85,6 @@ rules:
   resources: ["services/proxy"]
   resourceNames: ["heapster", "http:heapster:", "https:heapster:"]
   verbs: ["get"]
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -107,12 +99,10 @@ subjects:
 - kind: ServiceAccount
   name: kubernetes-dashboard
   namespace: kube-system
-
 ---
 # ------------------- Dashboard Deployment ------------------- #
-
 kind: Deployment
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 metadata:
   labels:
     k8s-app: kubernetes-dashboard
@@ -179,10 +169,8 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
-
 ---
 # ------------------- Dashboard Service ------------------- #
-
 kind: Service
 apiVersion: v1
 metadata:
@@ -196,23 +184,6 @@ spec:
       targetPort: 8443
   selector:
     k8s-app: kubernetes-dashboard
----
-# Grant admin privileges to the dashboard serviceacount
-
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: kubernetes-dashboard
-  labels:
-    k8s-app: kubernetes-dashboard
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: kubernetes-dashboard
-  namespace: kube-system
 EOF
 }
 
@@ -230,7 +201,7 @@ if [ "$(echo $INFLUX_GRAFANA_DASHBOARD_ENABLED | tr '[:upper:]' '[:lower:]')" ==
         echo "Writing File: $INFLUX_DEPLOY"
         mkdir -p $(dirname ${INFLUX_DEPLOY})
         cat << EOF > ${INFLUX_DEPLOY}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: monitoring-influxdb
@@ -277,7 +248,7 @@ EOF
         echo "Writing File: $GRAFANA_DEPLOY"
         mkdir -p $(dirname ${GRAFANA_DEPLOY})
         cat << EOF > ${GRAFANA_DEPLOY}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: monitoring-grafana
@@ -375,13 +346,17 @@ metadata:
   name: heapster
   namespace: kube-system
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: heapster
   namespace: kube-system
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      task: monitoring
+      k8s-app: heapster
   template:
     metadata:
       labels:
@@ -395,7 +370,7 @@ spec:
         imagePullPolicy: IfNotPresent
         command:
         - /heapster
-        - --source=kubernetes:https://kubernetes.default
+        - --source=kubernetes:https://kubernetes.default?insecure=false&useServiceAccount=true&kubeletPort=10250&kubeletHttps=true
 ${INFLUX_SINK}
 ---
 apiVersion: v1
@@ -424,6 +399,40 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: system:heapster
+subjects:
+- kind: ServiceAccount
+  name: heapster
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:heapster-to-kubelet
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/proxy
+      - nodes/stats
+      - nodes/log
+      - nodes/spec
+      - nodes/metrics
+    verbs:
+      - "*"
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: system:heapter-kubelet
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:heapster-to-kubelet
 subjects:
 - kind: ServiceAccount
   name: heapster
