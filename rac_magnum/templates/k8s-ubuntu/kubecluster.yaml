@@ -613,7 +613,7 @@ resources:
       remote_group: {get_resource: secgroup_kube_minion}
 
   # allow any traffic between master and worker nodes
-  secgroup_rule_tcp_kube_minion:
+  secgroup_rule_tcp_kube_master_minion:
     type: OS::Neutron::SecurityGroupRule
     properties:
       protocol: tcp
@@ -621,7 +621,7 @@ resources:
       port_range_max: 65535
       security_group: {get_resource: secgroup_kube_master}
       remote_group: {get_resource: secgroup_kube_minion}
-  secgroup_rule_tcp_ipv6_kube_minion:
+  secgroup_rule_tcp_ipv6_kube_master_minion:
     type: OS::Neutron::SecurityGroupRule
     properties:
       protocol: tcp
@@ -630,7 +630,7 @@ resources:
       port_range_max: 65535
       security_group: {get_resource: secgroup_kube_master}
       remote_group: {get_resource: secgroup_kube_minion}
-  secgroup_rule_udp_kube_minion:
+  secgroup_rule_udp_kube_master_minion:
     type: OS::Neutron::SecurityGroupRule
     properties:
       protocol: udp
@@ -638,7 +638,7 @@ resources:
       port_range_max: 65535
       security_group: {get_resource: secgroup_kube_master}
       remote_group: {get_resource: secgroup_kube_minion}
-  secgroup_rule_udp_ipv6_kube_minion:
+  secgroup_rule_udp_ipv6_kube_master_minion:
     type: OS::Neutron::SecurityGroupRule
     properties:
       protocol: udp
