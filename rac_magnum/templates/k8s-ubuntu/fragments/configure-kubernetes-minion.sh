@@ -11,6 +11,10 @@ echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.l
 sudo apt-get update -qq
 sudo apt-get install -y kubectl kubelet kubeadm kubernetes-cni
 
+cat > /etc/default/kubelet <<EOF
+KUBELET_EXTRA_ARGS="--cloud-provider=external"
+EOF
+
 echo $JOIN_COMMAND
 
 eval $JOIN_COMMAND

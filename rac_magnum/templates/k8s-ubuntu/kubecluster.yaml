@@ -458,49 +458,196 @@ resources:
     type: OS::Neutron::SecurityGroup
     properties:
       rules:
+        # Standard ports allowed by upstream Magnum
         - protocol: icmp
         - protocol: tcp
           port_range_min: 22
           port_range_max: 22
         - protocol: tcp
+          port_range_min: 7080
+          port_range_max: 7080
+        - protocol: tcp
+          port_range_min: 8080
+          port_range_max: 8080
+        - protocol: tcp
+          port_range_min: 2379
+          port_range_max: 2379
+        - protocol: tcp
+          port_range_min: 2380
+          port_range_max: 2380
+        - protocol: tcp
           port_range_min: 6443
           port_range_max: 6443
         - protocol: tcp
-          port_range_min: 1
-          port_range_max: 65535
-          remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_kube_minion }
-        - protocol: udp
-          port_range_min: 1
-          port_range_max: 65535
-          remote_mode: remote_group_id
-          remote_group_id: { get_resource: secgroup_kube_minion }
+          port_range_min: 9100
+          port_range_max: 9100
+        - protocol: tcp
+          port_range_min: 10250
+          port_range_max: 10250
+        - protocol: tcp
+          port_range_min: 30000
+          port_range_max: 32767
+        - protocol: tcp
+          port_range_min: 8472
+          port_range_max: 8472
 
         - protocol: icmp
           ethertype: IPv6
         - protocol: tcp
+          ethertype: IPv6
           port_range_min: 22
           port_range_max: 22
-          ethertype: IPv6
         - protocol: tcp
+          ethertype: IPv6
+          port_range_min: 7080
+          port_range_max: 7080
+        - protocol: tcp
+          ethertype: IPv6
+          port_range_min: 8080
+          port_range_max: 8080
+        - protocol: tcp
+          ethertype: IPv6
+          port_range_min: 2379
+          port_range_max: 2379
+        - protocol: tcp
+          ethertype: IPv6
+          port_range_min: 2380
+          port_range_max: 2380
+        - protocol: tcp
+          ethertype: IPv6
           port_range_min: 6443
           port_range_max: 6443
+        - protocol: tcp
           ethertype: IPv6
+          port_range_min: 9100
+          port_range_max: 9100
+        - protocol: tcp
+          ethertype: IPv6
+          port_range_min: 10250
+          port_range_max: 10250
+        - protocol: tcp
+          ethertype: IPv6
+          port_range_min: 30000
+          port_range_max: 32767
+        - protocol: tcp
+          ethertype: IPv6
+          port_range_min: 8472
+          port_range_max: 8472
+
 
   secgroup_kube_minion:
     type: OS::Neutron::SecurityGroup
     properties:
       rules:
+        # Allow all ICMP
         - protocol: icmp
-        - protocol: tcp
-        - protocol: udp
-
         - protocol: icmp
           ethertype: IPv6
+
+        # Default from upstream Magnum
         - protocol: tcp
+          port_range_min: 30000
+          port_range_max: 32767
+        - protocol: tcp
+          ethertype: IPv6
+          port_range_min: 30000
+          port_range_max: 32767
+
+        # Allow port 22 from IPv6 only
+        - protocol: tcp
+          ethertype: IPv6
           port_range_min: 22
           port_range_max: 22
+
+        # Allow traffic from master nodes on all ports
+        - protocol: tcp
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_kube_master }
+        - protocol: udp
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_kube_master }
+        - protocol: tcp
           ethertype: IPv6
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_kube_master }
+        - protocol: udp
+          ethertype: IPv6
+          remote_mode: remote_group_id
+          remote_group_id: { get_resource: secgroup_kube_master }
+
+
+  # allow any traffic between worker nodes
+  secgroup_rule_tcp_kube_minion:
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: tcp
+      port_range_min: 1
+      port_range_max: 65535
+      security_group: {get_resource: secgroup_kube_minion}
+      remote_group: {get_resource: secgroup_kube_minion}
+  secgroup_rule_tcp_ipv6_kube_minion:
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: tcp
+      ethertype: IPv6
+      port_range_min: 1
+      port_range_max: 65535
+      security_group: {get_resource: secgroup_kube_minion}
+      remote_group: {get_resource: secgroup_kube_minion}
+  secgroup_rule_udp_kube_minion:
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: udp
+      port_range_min: 1
+      port_range_max: 65535
+      security_group: {get_resource: secgroup_kube_minion}
+      remote_group: {get_resource: secgroup_kube_minion}
+  secgroup_rule_udp_ipv6_kube_minion:
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: udp
+      ethertype: IPv6
+      port_range_min: 1
+      port_range_max: 65535
+      security_group: {get_resource: secgroup_kube_minion}
+      remote_group: {get_resource: secgroup_kube_minion}
+
+  # allow any traffic between master and worker nodes
+  secgroup_rule_tcp_kube_minion:
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: tcp
+      port_range_min: 1
+      port_range_max: 65535
+      security_group: {get_resource: secgroup_kube_master}
+      remote_group: {get_resource: secgroup_kube_minion}
+  secgroup_rule_tcp_ipv6_kube_minion:
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: tcp
+      ethertype: IPv6
+      port_range_min: 1
+      port_range_max: 65535
+      security_group: {get_resource: secgroup_kube_master}
+      remote_group: {get_resource: secgroup_kube_minion}
+  secgroup_rule_udp_kube_minion:
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: udp
+      port_range_min: 1
+      port_range_max: 65535
+      security_group: {get_resource: secgroup_kube_master}
+      remote_group: {get_resource: secgroup_kube_minion}
+  secgroup_rule_udp_ipv6_kube_minion:
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: udp
+      ethertype: IPv6
+      port_range_min: 1
+      port_range_max: 65535
+      security_group: {get_resource: secgroup_kube_master}
+      remote_group: {get_resource: secgroup_kube_minion}
+
 
   ######################################################################
   #
