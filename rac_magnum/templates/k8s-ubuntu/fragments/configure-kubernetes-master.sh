@@ -105,7 +105,7 @@ result=$(kubeadm init --config /etc/kubernetes/kubeadm.conf)
 echo $result
 
 # Enable unsecured interface on localhost
-sed -i '/insecure-port=0/a \    - --insecure-bind-address=0.0.0.0' /etc/kubernetes/manifests/kube-apiserver.yaml
+#sed -i '/insecure-port=0/a \    - --insecure-bind-address=0.0.0.0' /etc/kubernetes/manifests/kube-apiserver.yaml
 sed -i 's/insecure-port=0/insecure-port=8080/' /etc/kubernetes/manifests/kube-apiserver.yaml
 
 api_id=$(docker ps -qf name=k8s_kube-apiserver*)
