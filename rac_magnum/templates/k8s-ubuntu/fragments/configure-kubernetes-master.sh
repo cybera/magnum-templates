@@ -100,6 +100,8 @@ EOF
 # --apiserver-advertise-address ${KUBE_API_PRIVATE_ADDRESS} \
 # --apiserver-cert-extra-sans "$sans")
 
+rm /etc/kubernetes/pki/ca.crt
+
 result=$(kubeadm init --config /etc/kubernetes/kubeadm.conf)
 
 echo $result

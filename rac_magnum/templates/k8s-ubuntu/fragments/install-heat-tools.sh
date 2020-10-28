@@ -8,6 +8,6 @@ export DEBIAN_FRONTEND=noninteractive
 # Install python requests
 apt-get update -qq
 
-apt-get install -y python-pip
-pip install os-collect-config os-apply-config os-refresh-config dib-utils heat-cfntools
+apt-get install -y python3-pip
+pip3 install os-collect-config os-apply-config os-refresh-config dib-utils heat-cfntools
 cfn-create-aws-symlinks

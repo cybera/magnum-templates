@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -17,7 +17,6 @@ import logging
 import os
 import subprocess
 import sys
-import warnings
 
 WORKING_DIR = os.environ.get('HEAT_SCRIPT_WORKING',
                              '/var/lib/heat-config/heat-config-script')
@@ -31,8 +30,6 @@ def prepare_dir(path):
 
 
 def main(argv=sys.argv):
-    warnings.warn('This hook is deprecated, please use hooks from heat-agents '
-                  'repository instead.', DeprecationWarning)
     log = logging.getLogger('heat-config')
     handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(
@@ -62,7 +59,7 @@ def main(argv=sys.argv):
     env['heat_outputs_path'] = heat_outputs_path
 
     with os.fdopen(os.open(fn, os.O_CREAT | os.O_WRONLY, 0o700), 'w') as f:
-        f.write(c.get('config', '').encode('utf-8'))
+        f.write(c.get('config', ''))
 
     log.debug('Running %s' % fn)
     subproc = subprocess.Popen([fn], stdout=subprocess.PIPE,
@@ -88,12 +85,13 @@ def main(argv=sys.argv):
             pass
 
     response.update({
-        'deploy_stdout': stdout,
-        'deploy_stderr': stderr,
+        'deploy_stdout': stdout.decode('utf-8', 'replace'),
+        'deploy_stderr': stderr.decode('utf-8', 'replace'),
         'deploy_status_code': subproc.returncode,
     })
 
     json.dump(response, sys.stdout)
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

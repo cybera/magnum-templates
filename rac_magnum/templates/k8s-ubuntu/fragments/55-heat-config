@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -20,9 +20,11 @@ import stat
 import subprocess
 import sys
 
-import requests
 import six
+import yaml
 
+# legacy groups that have never had a hook script
+WHITELISTED_MISSING_HOOK_SCRIPTS = ['os-apply-config']
 HOOKS_DIR_PATHS = (
     os.environ.get('HEAT_CONFIG_HOOKS'),
     '/usr/libexec/heat-config/hooks',
@@ -88,13 +90,26 @@ def find_hook_path(group):
             return hook_path
 
 
+def humanize(data):
+    # reformat a json string with multi-line values into a human readable yaml
+    # dump. if conversion fails, it will fallback to original string.
+    try:
+        return yaml.safe_dump(data,
+            allow_unicode=True,
+            default_flow_style=False,
+            canonical=False,
+            default_style="|")
+    except Exception:
+        return data
+
+
 def invoke_hook(c, log):
     # Sanitize input values (bug 1333992). Convert all String
     # inputs to strings if they're not already
     hot_inputs = c.get('inputs', [])
     for hot_input in hot_inputs:
         if hot_input.get('type', None) == 'String' and \
-                not isinstance(hot_input['value'], six.text_type):
+                not isinstance(hot_input['value'], six.string_types):
             hot_input['value'] = str(hot_input['value'])
     iv = dict((i['name'], i['value']) for i in c['inputs'])
     # The group property indicates whether it is softwarecomponent or
@@ -131,39 +146,46 @@ def invoke_hook(c, log):
     hook_path = find_hook_path(c['group'])
 
     if not hook_path:
-        log.warn('Skipping group %s with no hook script %s' % (
-            c['group'], hook_path))
+        if not c['group'] in WHITELISTED_MISSING_HOOK_SCRIPTS:
+            log.error('Skipping group %s with no hook script %s' % (
+                c['group'], hook_path))
         return
 
     # write out config, which indicates it is deployed regardless of
     # subsequent hook success
     with os.fdopen(os.open(
             deployed_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
-        json.dump(c, f, indent=2)
+        json.dump(c, f, indent=2, separators=(',', ': '))
 
     log.debug('Running %s < %s' % (hook_path, deployed_path))
     subproc = subprocess.Popen([hook_path],
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    stdout, stderr = subproc.communicate(input=json.dumps(c))
+    stdout, stderr = subproc.communicate(
+        input=json.dumps(c).encode('utf-8', 'replace'))
 
-    log.info(stdout)
+    log.info(humanize(stdout))
     log.debug(stderr)
 
     if subproc.returncode:
         log.error("Error running %s. [%s]\n" % (
             hook_path, subproc.returncode))
+        signal_data = {
+            'deploy_stdout': stdout.decode("utf-8", "replace"),
+            'deploy_stderr': stderr.decode("utf-8", "replace"),
+            'deploy_status_code': subproc.returncode,
+        }
     else:
         log.info('Completed %s' % hook_path)
 
     try:
         if stdout:
-            signal_data = json.loads(stdout)
+            signal_data = json.loads(stdout.decode('utf-8', 'replace'))
     except ValueError:
         signal_data = {
-            'deploy_stdout': stdout,
-            'deploy_stderr': stderr,
+            'deploy_stdout': stdout.decode("utf-8", "replace"),
+            'deploy_stderr': stderr.decode("utf-8", "replace"),
             'deploy_status_code': subproc.returncode,
         }
 
@@ -171,7 +193,7 @@ def invoke_hook(c, log):
     # write out notify data for debugging
     with os.fdopen(os.open(
             signal_data_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
-        json.dump(signal_data, f, indent=2)
+        json.dump(signal_data, f, indent=2, separators=(',', ': '))
 
     log.debug('Running %s %s < %s' % (
         HEAT_CONFIG_NOTIFY, deployed_path, signal_data_path))
@@ -179,7 +201,8 @@ def invoke_hook(c, log):
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    stdout, stderr = subproc.communicate(input=json.dumps(signal_data))
+    stdout, stderr = subproc.communicate(
+        input=json.dumps(signal_data).encode('utf-8', 'replace'))
 
     log.info(stdout)
 

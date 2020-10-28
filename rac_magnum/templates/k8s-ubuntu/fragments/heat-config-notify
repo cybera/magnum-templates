@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -18,6 +18,9 @@ import os
 import sys
 
 import requests
+
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 try:
     from heatclient import client as heatclient
@@ -58,7 +61,7 @@ def trim_response(response, trimmed_values=None):
     """
 
     trimmed_values = trimmed_values or ('deploy_stdout', 'deploy_stderr')
-    str_response = json.dumps(response, ensure_ascii=True, encoding='utf-8')
+    str_response = json.dumps(response, ensure_ascii=True)
     len_total = len(str_response)
     offset = MAX_RESPONSE_SIZE - len_total
     if offset >= 0:
@@ -94,7 +97,8 @@ def main(argv=sys.argv, stdin=sys.stdin):
         log.error(usage)
         return 1
 
-    c = json.load(open(conf_file))
+    with open(conf_file, mode='r') as f:
+        c = json.load(f)
 
     iv = dict((i['name'], i['value']) for i in c['inputs'])
 
@@ -105,12 +109,25 @@ def main(argv=sys.argv, stdin=sys.stdin):
         # we need to trim log content because Heat response size is limited
         # by max_json_body_size = 1048576
         str_signal_data = trim_response(signal_data)
+        session = requests.Session()
+        # Retry if connection issues occur or the service is returning a 5xx
+        retry = Retry(
+            total=10,
+            read=10,
+            connect=10,
+            backoff_factor=0.5,
+            status_forcelist=(500, 502, 503, 504)
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+
         if sigverb == 'PUT':
-            r = requests.put(sigurl, data=str_signal_data,
-                             headers={'content-type': 'application/json'})
+            r = session.put(sigurl, data=str_signal_data,
+                            headers={'content-type': 'application/json'})
         else:
-            r = requests.post(sigurl, data=str_signal_data,
-                              headers={'content-type': 'application/json'})
+            r = session.post(sigurl, data=str_signal_data,
+                             headers={'content-type': 'application/json'})
         log.debug('Response %s ' % r)
 
     if 'deploy_queue_id' in iv:
@@ -123,7 +140,8 @@ def main(argv=sys.argv, stdin=sys.stdin):
             password=iv['deploy_password'],
             project_id=iv['deploy_project_id'])
         endpoint = ks.service_catalog.url_for(
-            service_type='messaging', endpoint_type='publicURL')
+            service_type='messaging', endpoint_type='publicURL',
+            region_name=iv.get('deploy_region_name'))
 
         conf = {
             'auth_opts': {
@@ -146,7 +164,8 @@ def main(argv=sys.argv, stdin=sys.stdin):
             password=iv['deploy_password'],
             project_id=iv['deploy_project_id'])
         endpoint = ks.service_catalog.url_for(
-            service_type='orchestration', endpoint_type='publicURL')
+            service_type='orchestration', endpoint_type='publicURL',
+            region_name=iv.get('deploy_region_name'))
         log.debug('Signalling to %s' % endpoint)
         heat = heatclient.Client(
             '1', endpoint, token=ks.auth_token)
